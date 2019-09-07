@@ -1,0 +1,19 @@
+{
+	"title"		:	"MTTT Weapon Placer",
+	"type"		:	"tool",
+	"tags"		:	[ "build" ],
+	"ignore"	:
+	[
+		"*.psd",
+    "*.git/*",
+    "*.pdn",
+    "LICENSE",
+		"gamemodes/mttt/README.md",
+		"README.md",
+		"*.log",
+    "source/*",
+		".gitignore",
+		"*.tga",
+		"*.svn*"
+	]
+}
