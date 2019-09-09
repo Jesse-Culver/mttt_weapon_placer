@@ -30,6 +30,10 @@ mtttEntity = {{
 if file.IsDir("mttt", "DATA") ~= true then
   file.CreateDir("mttt")
 end
+-- Check if the mttt/maps directory even exists in the data folder
+if file.IsDir("mttt/maps", "DATA") ~= true then
+  file.CreateDir("mttt/maps")
+end
 -- Check if the file exists
 if file.Read("mttt/itemplacer.txt") == nil then
   file.Write("mttt/itemplacer.txt", contents)
