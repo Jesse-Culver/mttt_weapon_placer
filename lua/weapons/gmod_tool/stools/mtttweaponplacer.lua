@@ -63,10 +63,10 @@ function TOOL.BuildCPanel(panel)
     itemChoices[mtttEntity[idnum]["PrintName"]] = {mtttweaponplacer_item = mtttEntity[idnum]["ClassName"]}
   end
   panel:AddControl("ListBox", { Label = "Items", Height = "200", Options = itemChoices } )
-  panel:AddControl("Button", {Label="Report counts", Command="mtttweaponplacer_count", Text="Count"})
+  --panel:AddControl("Button", {Label="Report counts", Command="mtttweaponplacer_count", Text="Count"})
   --panel:AddControl("Label", {Text="Export", Description="Export weapon placements"})
   --panel:AddControl("CheckBox", {Label="Replace existing player spawnpoints", Command="mtttweaponplacer_replacespawns", Text="Replace spawns"})
-  panel:AddControl( "Button",  { Label	= "Export to file", Command = "mtttweaponplacer_queryexport", Text = "Export"})
+  panel:AddControl( "Button",  { Label	= "Export to file", Command = "mtttweaponplacer_export", Text = "Export"})
   --panel:AddControl("Label", {Text="Import", Description="Import weapon placements"})
   --panel:AddControl( "Button",  { Label	= "Import from file", Command = "mtttweaponplacer_queryimport", Text = "Import"})
   --panel:AddControl("Button", {Label="Convert HL2 entities", Command = "mtttweaponplacer_replacehl2", Text="Convert"})
@@ -105,4 +105,36 @@ function TOOL:RightClick(tr)
   return
 end
 
+local function Export()
+  if SERVER then
+    local map = string.lower(game.GetMap())
+    if not map then return end
+    local buf =  "# Modified Trouble in Terrorist Town weapon/ammo placement overrides\n"
+    buf = buf .. "# For map: " .. map .. "\n"
+    buf = buf .. "# Exported by: " .. GetHostName() .. "\n"
+    -- Write settings ("setting: <name> <value>")
+    local rspwns = GetConVar("mtttweaponplacer_replacespawns"):GetBool() and "1" or "0"
+    buf = buf .. "setting:\treplacespawns " .. rspwns .. "\n"
+
+    local num = 0
+    for cls, mdl in pairs(mtttEntity) do
+      print("Checking for "..mtttEntity[cls]["ClassName"])
+      for _, ent in pairs(ents.FindByClass(mtttEntity[cls]["ClassName"])) do
+        print("Found "..mtttEntity[cls]["ClassName"])
+        if IsValid(ent) then
+          num = num + 1
+          buf = buf .. Format("%s\t%s\t%s\n", cls, tostring(ent:GetPos()), tostring(ent:GetAngles()))
+        end
+      end
+    end
+
+    local fname = "mttt/maps/" .. map .. "_ttt.txt"
+    file.Write(fname,buf)
+    if not file.Exists(fname, "DATA") then
+      ErrorNoHalt("Exported file not found. Bug?\n")
+   end
+   PrintMessage(HUD_PRINTTALK, num .." placements saved to /garrysmod/data/".. fname .. " on the server")
+  end
 end
+concommand.Add("mtttweaponplacer_export", Export)
+
