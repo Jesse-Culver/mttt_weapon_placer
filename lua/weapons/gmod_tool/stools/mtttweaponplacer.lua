@@ -9,7 +9,7 @@ cleanup.Register("mttt_items")
 if CLIENT then
   language.Add("tool.mtttweaponplacer.name", "MTTT Weapon Placer" )
   language.Add("tool.mtttweaponplacer.desc", "Spawn MTTT item dummies and export their placement" )
-  language.Add("tool.mtttweaponplacer.0", "Left click to spawn entity. Right click for matching ammo." )
+  language.Add("tool.mtttweaponplacer.0", "Left click to spawn entity." )
   language.Add("Cleanup_Mttt_items", "MTTT Dummy Weapons/ammo/spawns")
   language.Add("Undone_MTTTItems", "Undone MTTT item" )
 end
@@ -51,7 +51,7 @@ function TOOL:LeftClick(tr)
 end
 
 function TOOL:RightClick(tr)
-  -- Get ClientConvar for currently selected weapon
-  -- local clientItem = self:GetClientInfo("item")
-  -- self:SpawnAmmo(clientItem,tr)
+  return
+end
+
 end
