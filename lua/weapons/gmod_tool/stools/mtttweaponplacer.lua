@@ -1,3 +1,6 @@
+-- Allows you to place, export, and import item setups for MTTT maps
+-- NOTE: mtttEntity[][] is declared in the autorun file as a global which is why we can access here
+
 TOOL.Category = "Modified Trouble in Terrorist Town"
 TOOL.Name = "MTTT Weapon Placer"
 
@@ -22,6 +25,36 @@ local colors = {
   ttt_playerspawn = Color(0, 255, 0)
 };
 
+local function DummyInit(s)
+  if colors[s:GetClass()] then
+     local c = colors[s:GetClass()]
+     s:SetColor(c)
+  end
+
+  s:SetCollisionGroup(COLLISION_GROUP_WEAPON)
+  s:SetSolid(SOLID_VPHYSICS)
+  s:SetMoveType(MOVETYPE_VPHYSICS)
+
+  if s:GetClass() == "ttt_playerspawn" then
+     s:PhysicsInitBox(Vector(-18, -18, -0.1), Vector(18, 18, 66))
+     s:SetPos(s:GetPos() + Vector(0, 0, 1))
+  else
+     s:PhysicsInit(SOLID_VPHYSICS)
+  end
+
+  s:SetModel(mtttEntity[s:GetClass()]["Model"])
+end
+
+-- Register all entities in the table as dummy ents
+for k, v in pairs(mtttEntity) do
+  local tbl = {
+     Type = "anim",
+     Model = mtttEntity[k]["Model"],
+     Initialize = DummyInit
+  };
+  scripted_ents.Register(tbl, k, false)
+end
+
 -- This is the setup for the options in game on the tool
 function TOOL.BuildCPanel(panel)
   panel:AddControl( "Header", { Text = "tool.mtttweaponplacer.name", Description = language.GetPhrase("tool.mtttweaponplacer.desc")})
@@ -40,14 +73,32 @@ function TOOL.BuildCPanel(panel)
   --panel:AddControl("Button", {Label="Remove all existing weapon/ammo", Command = "mtttweaponplacer_removeall", Text="Remove all existing items"})
 end
 
--- function TOOL:SpawnItem(clientItem,trace)
---   local model = 
--- end
+function TOOL:SpawnItem(clientItem,trace)
+  local mdl = mtttEntity[clientItem]["Model"]
+  if util.IsValidModel(mdl) ~= true then return end
+  local ent = ents.Create(clientItem)
+  ent:SetModel(mdl)
+  ent:SetPos(trace.HitPos)
+  local tr = util.TraceEntity({start=trace.StartPos, endpos=trace.HitPos, filter=self:GetOwner()}, ent)
+   if tr.Hit then
+      ent:SetPos(tr.HitPos)
+   end
+   ent:Spawn()
+
+   ent:PhysWake()
+
+   undo.Create("MTTTItem")
+   undo.AddEntity(ent)
+   undo.SetPlayer(self:GetOwner())
+   undo.Finish()
+
+   self:GetOwner():AddCleanup("mttt_items", ent)
+end
 
 function TOOL:LeftClick(tr)
   -- Get ClientConvar for currently selected weapon
-  -- local clientItem = self:GetClientInfo("item")
-  -- self:SpawnItem(clientItem,tr)
+  local clientItem = self:GetClientInfo("item")
+  self:SpawnItem(clientItem,tr)
 end
 
 function TOOL:RightClick(tr)
