@@ -35,6 +35,13 @@ if file.Read("mttt/itemplacer.txt") == nil then
   file.Write("mttt/itemplacer.txt", contents)
 end
 
+function PrecacheMTTTItemModels()
+  for idnum, item in pairs(mtttEntity) do
+    util.PrecacheModel(Model(mtttEntity[idnum]["Model"]))
+    print(Format("%s has been precached!",mtttEntity[idnum]["Model"]))
+  end
+end
+
 function FillMTTTEntTable()
   local itemFile = file.Read("mttt/itemplacer.txt")
   local allItemsTableTemp = string.Explode("\n", itemFile)
@@ -55,6 +62,8 @@ function FillMTTTEntTable()
   end
   -- We have to remove the last line because it's always blank thanks to inserts
   table.remove(mtttEntity,1)
+  -- Precache everything
+  PrecacheMTTTItemModels()
   print("Entities loaded for MTTT Placer: \n")
   PrintTable(mtttEntity)
 end
