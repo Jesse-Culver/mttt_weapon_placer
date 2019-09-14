@@ -47,29 +47,33 @@ function PrecacheMTTTItemModels()
 end
 
 function FillMTTTEntTable()
+  table.Empty(mtttEntity)
   local itemFile = file.Read("mttt/itemplacer.txt")
   local allItemsTableTemp = string.Explode("\n", itemFile)
   for key, val in pairs(allItemsTableTemp) do
-    local itemTableTemp = string.Explode(",", val)
-    local valTableTemp = {}
-    for j, k in pairs(itemTableTemp) do
-      if j == 1 then
-        valTableTemp["ClassName"] = k
-      elseif j == 2 then
-        valTableTemp["PrintName"] = k
-      elseif j == 3 then
-        valTableTemp["Model"] = k
+    -- We check if it's a blank line, if so that means we can skip this entire loop
+    if val ~= "" then
+      local itemTableTemp = string.Explode(",", val)
+      local valTableTemp = {}
+      for j, k in pairs(itemTableTemp) do
+        if j == 1 then
+          valTableTemp["ClassName"] = k
+        elseif j == 2 then
+          valTableTemp["PrintName"] = k
+        elseif j == 3 then
+          valTableTemp["Model"] = k
+        end
       end
+      -- Insert by classname
+      mtttEntity[itemTableTemp[1]] = valTableTemp
     end
-    -- Insert by classname
-    mtttEntity[itemTableTemp[1]] = valTableTemp
   end
-  -- We have to remove the last line because it's always blank thanks to inserts
+  -- We have to remove the first line because it's always blank thanks to inserts
   table.remove(mtttEntity,1)
-  -- Precache everything
-  PrecacheMTTTItemModels()
   print("Entities loaded for MTTT Placer: \n")
   PrintTable(mtttEntity)
+  -- Precache everything
+  PrecacheMTTTItemModels()
 end
 
 FillMTTTEntTable()
