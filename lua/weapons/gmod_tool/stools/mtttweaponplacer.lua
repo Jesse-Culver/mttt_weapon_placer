@@ -63,8 +63,7 @@ function TOOL.BuildCPanel(panel)
     itemChoices[mtttEntity[idnum]["PrintName"]] = {mtttweaponplacer_item = mtttEntity[idnum]["ClassName"]}
   end
   panel:AddControl("ListBox", { Label = "Items", Height = "200", Options = itemChoices } )
-  --panel:AddControl("Button", {Label="Report counts", Command="mtttweaponplacer_count", Text="Count"})
-  --panel:AddControl("Label", {Text="Export", Description="Export weapon placements"})
+  panel:AddControl("Button", {Label="Report counts", Command="mtttweaponplacer_count", Text="Count"})
   --panel:AddControl("CheckBox", {Label="Replace existing player spawnpoints", Command="mtttweaponplacer_replacespawns", Text="Replace spawns"})
   panel:AddControl( "Button",  { Label	= "Export to file", Command = "mtttweaponplacer_export", Text = "Export"})
   --panel:AddControl("Label", {Text="Import", Description="Import weapon placements"})
@@ -104,6 +103,22 @@ end
 function TOOL:RightClick(tr)
   return
 end
+
+local function PrintCount(ply)
+  if not IsValid(ply) then return end
+  ply:ChatPrint("**ITEMS PLACED**")
+  for idnum, item in pairs(mtttEntity) do
+    local num = 0
+    for k, ent in pairs(ents.FindByClass(mtttEntity[idnum]["ClassName"])) do
+      num = num + 1
+    end
+    if num ~= 0 then
+      ply:ChatPrint(mtttEntity[idnum]["PrintName"]..": ".. tostring(num))
+    end
+  end
+  ply:ChatPrint("**You may need to open chat and scroll up to see full list**")
+end
+concommand.Add("mtttweaponplacer_count", PrintCount)
 
 local function Export()
   if SERVER then
