@@ -26,6 +26,7 @@ if SERVER then
     net.WriteTable(mtttEntity)
     net.Send(ply)
     print("Sent "..ply:GetName().." the MTTT ent table\n")
+    ply:ConCommand("mtttweaponplacer_item weapon_zm_pistol")
   end)
 end
 
