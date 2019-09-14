@@ -91,10 +91,29 @@ function TOOL:SpawnItem(clientItem,trace)
    self:GetOwner():AddCleanup("mttt_items", ent)
 end
 
-function TOOL:LeftClick(tr)
+function TOOL:LeftClick(trace)
   -- Get ClientConvar for currently selected weapon
+  if CLIENT then return true end
   local clientItem = self:GetClientInfo("item")
-  self:SpawnItem(clientItem,tr)
+  local mdl = mtttEntity[clientItem]["Model"]
+  if util.IsValidModel(mdl) ~= true then return end
+  local ent = ents.Create(clientItem)
+  ent:SetModel(mdl)
+  ent:SetPos(trace.HitPos)
+  local tr = util.TraceEntity({start=trace.StartPos, endpos=trace.HitPos, filter=self:GetOwner()}, ent)
+   if tr.Hit then
+      ent:SetPos(tr.HitPos)
+   end
+   ent:Spawn()
+
+   ent:PhysWake()
+
+   undo.Create("MTTTItem")
+   undo.AddEntity(ent)
+   undo.SetPlayer(self:GetOwner())
+   undo.Finish()
+
+   self:GetOwner():AddCleanup("mttt_items", ent)
 end
 
 function TOOL:RightClick(tr)
@@ -117,16 +136,16 @@ local function PrintCount(ply)
 end
 concommand.Add("mtttweaponplacer_count", PrintCount)
 
-local function Export()
-  if SERVER then
+local function Export(ply)
+  if SERVER or game.SinglePlayer() then
     local map = string.lower(game.GetMap())
     if not map then return end
     local buf =  "# Modified Trouble in Terrorist Town weapon/ammo placement overrides\n"
     buf = buf .. "# For map: " .. map .. "\n"
     buf = buf .. "# Exported by: " .. GetHostName() .. "\n"
     -- Write settings ("setting: <name> <value>")
-    local rspwns = GetConVar("mtttweaponplacer_replacespawns"):GetBool() and "1" or "0"
-    buf = buf .. "setting:\treplacespawns " .. rspwns .. "\n"
+    --local rspwns = GetConVar("mtttweaponplacer_replacespawns"):GetBool() and "1" or "0"
+    buf = buf .. "setting:\treplacespawns 0\n"
 
     local num = 0
     for cls, mdl in pairs(mtttEntity) do
@@ -145,7 +164,36 @@ local function Export()
     if not file.Exists(fname, "DATA") then
       ErrorNoHalt("Exported file not found. Bug?\n")
    end
-   PrintMessage(HUD_PRINTTALK, num .." placements saved to /garrysmod/data/".. fname .. " on the server")
+   PrintMessage(HUD_PRINTTALK, num .." placements saved to /garrysmod/data/".. fname)
+  else
+    if not IsValid(ply) then return end
+    local map = string.lower(game.GetMap())
+    if not map then return end
+    local buf =  "# Modified Trouble in Terrorist Town weapon/ammo placement overrides\n"
+    buf = buf .. "# For map: " .. map .. "\n"
+    buf = buf .. "# Exported by: " .. GetHostName() .. "\n"
+    -- Write settings ("setting: <name> <value>")
+    --local rspwns = GetConVar("mtttweaponplacer_replacespawns"):GetBool() and "1" or "0"
+    buf = buf .. "setting:\treplacespawns 0\n"
+
+    local num = 0
+    for cls, mdl in pairs(mtttEntity) do
+      print("Checking for "..mtttEntity[cls]["ClassName"])
+      for _, ent in pairs(ents.FindByClass(mtttEntity[cls]["ClassName"])) do
+        print("Found "..mtttEntity[cls]["ClassName"])
+        if IsValid(ent) then
+          num = num + 1
+          buf = buf .. Format("%s\t%s\t%s\n", cls, tostring(ent:GetPos()), tostring(ent:GetAngles()))
+        end
+      end
+    end
+
+    local fname = "mttt/maps/" .. map .. "_ttt.txt"
+    file.Write(fname,buf)
+    if not file.Exists(fname, "DATA") then
+      ErrorNoHalt("Exported file not found. Bug?\n")
+   end
+   ply:ChatPrint(num .." placements saved to /garrysmod/data/".. fname .. " locally")
   end
 end
 concommand.Add("mtttweaponplacer_export", Export)
