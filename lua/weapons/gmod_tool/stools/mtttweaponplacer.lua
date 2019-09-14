@@ -70,7 +70,7 @@ function TOOL.BuildCPanel(panel)
   --panel:AddControl("Label", {Text="Import", Description="Import weapon placements"})
   panel:AddControl( "Button",  { Label	= "Import from file", Command = "mtttweaponplacer_import", Text = "Import"})
   --panel:AddControl("Button", {Label="Convert HL2 entities", Command = "mtttweaponplacer_replacehl2", Text="Convert"})
-  --panel:AddControl("Button", {Label="Remove all existing weapon/ammo", Command = "mtttweaponplacer_removeall", Text="Remove all existing items"})
+  panel:AddControl("Button", {Label="Remove all existing weapon/ammo", Command = "mtttweaponplacer_removeall", Text="Remove all existing items"})
 end
 
 function TOOL:SpawnItem(clientItem,trace)
@@ -218,3 +218,22 @@ local function Import()
   end
 end
 concommand.Add("mtttweaponplacer_import", Import)
+
+local function RemoveAll()
+  if SERVER then
+    local num = 0
+    local delete = function(ent)
+                      if not IsValid(ent) then return end
+                      print("\tRemoving", ent, ent:GetClass())
+                      ent:Remove()
+                      num = num + 1
+                  end
+    for idnum, item in pairs(mtttEntity) do
+      for k, ent in pairs(ents.FindByClass(mtttEntity[idnum]["ClassName"])) do
+        delete(ent)
+      end
+    end
+    PrintMessage(HUD_PRINTTALK,"Removed " .. tostring(num) .. " weapon/ammo ents")
+  end
+end
+concommand.Add("mtttweaponplacer_removeall", RemoveAll)
