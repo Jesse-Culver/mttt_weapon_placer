@@ -207,7 +207,7 @@ local function Export(ply)
     if not file.Exists(fname, "DATA") then
       ErrorNoHalt("Exported file not found. Bug?\n")
    end
-   ply:ChatPrint(num .." placements saved to /garrysmod/data/".. fname .. " locally")
+   ply:ChatPrint(num .." placements saved to /garrysmod/data/".. fname .. " locally. To save on server use the command mtttweaponplacer_export from the server terminal or rcon")
   end
 end
 concommand.Add("mtttweaponplacer_export", Export)
