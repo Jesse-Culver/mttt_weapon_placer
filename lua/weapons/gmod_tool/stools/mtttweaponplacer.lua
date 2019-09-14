@@ -240,7 +240,7 @@ local function SpawnDummyItem(cls, pos, ang)
 end
 
 -- Imports entities from a text file and loads them into the map
-local function Import()
+local function Import(ply)
   if SERVER then
     local map = string.lower(game.GetMap())
     if not map then return end
@@ -292,7 +292,9 @@ local function Import()
     end
 
     PrintMessage(HUD_PRINTTALK,"Spawned " .. tostring(num) .. " dummy ents")
-  end
+  elseif CLIENT and game.SinglePlayer() ~= true then
+    ply:ChatPrint("You do not have permission to do this, have the server operator use mtttweaponplacer_import from server terminal or rcon")
+  end 
 end
 concommand.Add("mtttweaponplacer_import", Import)
 
