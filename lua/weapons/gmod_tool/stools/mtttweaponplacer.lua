@@ -9,14 +9,6 @@ TOOL.ClientConVar["replacespawns"] = "0"
 
 cleanup.Register("mttt_items")
 
-if CLIENT then
-  language.Add("tool.mtttweaponplacer.name", "MTTT Weapon Placer" )
-  language.Add("tool.mtttweaponplacer.desc", "Spawn MTTT item dummies and export their placement" )
-  language.Add("tool.mtttweaponplacer.0", "Left click to spawn entity." )
-  language.Add("Cleanup_Mttt_items", "MTTT Dummy Weapons/ammo/spawns")
-  language.Add("Undone_MTTTItems", "Undone MTTT item" )
-end
-
 -- special colours for certain ents
 local colors = {
   ttt_random_weapon = Color(255, 255, 0),
@@ -25,6 +17,19 @@ local colors = {
   ttt_playerspawn = Color(0, 255, 0)
 };
 
+-- Send the MTTT Entity table to users when they join
+if SERVER then
+  util.AddNetworkString("mtttEntityTable")
+  hook.Add("PlayerInitialSpawn","SendMTTTents",function(ply)
+    print("Sending "..ply:GetName().." the MTTT ent table\n")
+    net.Start("mtttEntityTable")
+    net.WriteTable(mtttEntity)
+    net.Send(ply)
+    print("Sent "..ply:GetName().." the MTTT ent table\n")
+  end)
+end
+
+-- We make all of our item entities Dummy Ents so that they can be placed like props
 local function DummyInit(s)
   if colors[s:GetClass()] then
      local c = colors[s:GetClass()]
@@ -46,13 +51,44 @@ local function DummyInit(s)
 end
 
 -- Register all entities in the table as dummy ents
-for k, v in pairs(mtttEntity) do
-  local tbl = {
-     Type = "anim",
-     Model = mtttEntity[k]["Model"],
-     Initialize = DummyInit
-  };
-  scripted_ents.Register(tbl, k, false)
+function DummyEntityRegister()
+  for k, v in pairs(mtttEntity) do
+    local tbl = {
+      Type = "anim",
+      Model = mtttEntity[k]["Model"],
+      Initialize = DummyInit
+    };
+    scripted_ents.Register(tbl, k, false)
+  end
+end
+
+-- Run at least once here
+if SERVER then
+  DummyEntityRegister()
+end
+
+-- Precache all the models that we are going to use
+function PrecacheMTTTItemModels()
+  for idnum, item in pairs(mtttEntity) do
+    util.PrecacheModel(Model(mtttEntity[idnum]["Model"]))
+    print(Format("%s has been precached!",mtttEntity[idnum]["Model"]))
+  end
+  DummyEntityRegister()
+end
+
+-- Client specific things, like recieving the MTTT entity table from the server
+if CLIENT then
+  language.Add("tool.mtttweaponplacer.name", "MTTT Weapon Placer" )
+  language.Add("tool.mtttweaponplacer.desc", "Spawn MTTT item dummies and export their placement" )
+  language.Add("tool.mtttweaponplacer.0", "Left click to spawn entity." )
+  language.Add("Cleanup_Mttt_items", "MTTT Dummy Weapons/ammo/spawns")
+  language.Add("Undone_MTTTItems", "Undone MTTT item" )
+  net.Receive("mtttEntityTable", function()
+    print("New MTT Table recieved")
+    table.CopyFromTo(net.ReadTable(),mtttEntity)
+    PrintTable(mtttEntity)
+    PrecacheMTTTItemModels()
+  end)
 end
 
 -- This is the setup for the options in game on the tool
@@ -69,31 +105,9 @@ function TOOL.BuildCPanel(panel)
   panel:AddControl("Button", {Label="Remove all existing weapon/ammo", Command = "mtttweaponplacer_removeall", Text="Remove all existing items"})
 end
 
-function TOOL:SpawnItem(clientItem,trace)
-  local mdl = mtttEntity[clientItem]["Model"]
-  if util.IsValidModel(mdl) ~= true then return end
-  local ent = ents.Create(clientItem)
-  ent:SetModel(mdl)
-  ent:SetPos(trace.HitPos)
-  local tr = util.TraceEntity({start=trace.StartPos, endpos=trace.HitPos, filter=self:GetOwner()}, ent)
-   if tr.Hit then
-      ent:SetPos(tr.HitPos)
-   end
-   ent:Spawn()
-
-   ent:PhysWake()
-
-   undo.Create("MTTTItem")
-   undo.AddEntity(ent)
-   undo.SetPlayer(self:GetOwner())
-   undo.Finish()
-
-   self:GetOwner():AddCleanup("mttt_items", ent)
-end
-
 function TOOL:LeftClick(trace)
   -- Get ClientConvar for currently selected weapon
-  if CLIENT then return true end
+  if CLIENT and game.SinglePlayer() ~= true then return true end
   local clientItem = self:GetClientInfo("item")
   local mdl = mtttEntity[clientItem]["Model"]
   if util.IsValidModel(mdl) ~= true then return end
@@ -120,6 +134,7 @@ function TOOL:RightClick(tr)
   return
 end
 
+-- Print to the players chat the count of each item in use
 local function PrintCount(ply)
   if not IsValid(ply) then return end
   ply:ChatPrint("**ITEMS PLACED**")
@@ -136,6 +151,9 @@ local function PrintCount(ply)
 end
 concommand.Add("mtttweaponplacer_count", PrintCount)
 
+-- Export placement of items to a text file for import later
+-- If server or singleplayer then we save locally
+-- Clients can't cause server to export, command must be run from rcon or server terminal
 local function Export(ply)
   if SERVER or game.SinglePlayer() then
     local map = string.lower(game.GetMap())
@@ -143,8 +161,6 @@ local function Export(ply)
     local buf =  "# Modified Trouble in Terrorist Town weapon/ammo placement overrides\n"
     buf = buf .. "# For map: " .. map .. "\n"
     buf = buf .. "# Exported by: " .. GetHostName() .. "\n"
-    -- Write settings ("setting: <name> <value>")
-    --local rspwns = GetConVar("mtttweaponplacer_replacespawns"):GetBool() and "1" or "0"
     buf = buf .. "setting:\treplacespawns 0\n"
 
     local num = 0
@@ -172,8 +188,6 @@ local function Export(ply)
     local buf =  "# Modified Trouble in Terrorist Town weapon/ammo placement overrides\n"
     buf = buf .. "# For map: " .. map .. "\n"
     buf = buf .. "# Exported by: " .. GetHostName() .. "\n"
-    -- Write settings ("setting: <name> <value>")
-    --local rspwns = GetConVar("mtttweaponplacer_replacespawns"):GetBool() and "1" or "0"
     buf = buf .. "setting:\treplacespawns 0\n"
 
     local num = 0
@@ -198,6 +212,7 @@ local function Export(ply)
 end
 concommand.Add("mtttweaponplacer_export", Export)
 
+-- Used to spawn dummy ents after an import
 local function SpawnDummyItem(cls, pos, ang)
   if SERVER then
     if not cls or not pos or not ang then return false end
@@ -223,6 +238,7 @@ local function SpawnDummyItem(cls, pos, ang)
   end
 end
 
+-- Imports entities from a text file and loads them into the map
 local function Import()
   if SERVER then
     local map = string.lower(game.GetMap())

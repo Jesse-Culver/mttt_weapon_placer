@@ -1,6 +1,10 @@
 -- This script runs at the start and makes sure that you have the proper files created for the
 -- weapon placer tool, it also generates the table that holds all the information
 if engine.ActiveGamemode() ~= 'sandbox' then return end
+-- This is a global table so we need to make sure everyone gets one
+mtttEntity = {{
+}};
+if CLIENT then return end
 -- Structure - CSV
 -- entity_name,print name,model
 local contents = 
@@ -24,8 +28,6 @@ item_ammo_revolver_ttt,Ammo revolver,models/items/357ammo.mdl
 item_ammo_smg1_ttt,Ammo SMG,models/items/boxmrounds.mdl
 item_ammo_box_buckshot_ttt,Ammo shotgun,models/items/boxbuckshot.mdl]]
 
-mtttEntity = {{
-}};
 -- Check if the mttt directory even exists in the data folder
 if file.IsDir("mttt", "DATA") ~= true then
   file.CreateDir("mttt")
