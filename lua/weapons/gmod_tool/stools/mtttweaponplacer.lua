@@ -64,11 +64,8 @@ function TOOL.BuildCPanel(panel)
   end
   panel:AddControl("ListBox", { Label = "Items", Height = "200", Options = itemChoices } )
   panel:AddControl("Button", {Label="Report counts", Command="mtttweaponplacer_count", Text="Count"})
-  --panel:AddControl("CheckBox", {Label="Replace existing player spawnpoints", Command="mtttweaponplacer_replacespawns", Text="Replace spawns"})
   panel:AddControl( "Button",  { Label	= "Export to file", Command = "mtttweaponplacer_export", Text = "Export"})
-  --panel:AddControl("Label", {Text="Import", Description="Import weapon placements"})
   panel:AddControl( "Button",  { Label	= "Import from file", Command = "mtttweaponplacer_import", Text = "Import"})
-  --panel:AddControl("Button", {Label="Convert HL2 entities", Command = "mtttweaponplacer_replacehl2", Text="Convert"})
   panel:AddControl("Button", {Label="Remove all existing weapon/ammo", Command = "mtttweaponplacer_removeall", Text="Remove all existing items"})
 end
 
