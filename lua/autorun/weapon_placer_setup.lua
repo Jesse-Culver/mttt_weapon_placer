@@ -1,6 +1,6 @@
 -- This script runs at the start and makes sure that you have the proper files created for the
 -- weapon placer tool, it also generates the table that holds all the information
-
+if engine.ActiveGamemode() ~= 'sandbox' then return end
 -- Structure - CSV
 -- entity_name,print name,model
 local contents = 
