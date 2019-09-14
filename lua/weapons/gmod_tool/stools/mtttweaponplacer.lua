@@ -68,7 +68,7 @@ function TOOL.BuildCPanel(panel)
   --panel:AddControl("CheckBox", {Label="Replace existing player spawnpoints", Command="mtttweaponplacer_replacespawns", Text="Replace spawns"})
   panel:AddControl( "Button",  { Label	= "Export to file", Command = "mtttweaponplacer_export", Text = "Export"})
   --panel:AddControl("Label", {Text="Import", Description="Import weapon placements"})
-  --panel:AddControl( "Button",  { Label	= "Import from file", Command = "mtttweaponplacer_queryimport", Text = "Import"})
+  panel:AddControl( "Button",  { Label	= "Import from file", Command = "mtttweaponplacer_import", Text = "Import"})
   --panel:AddControl("Button", {Label="Convert HL2 entities", Command = "mtttweaponplacer_replacehl2", Text="Convert"})
   --panel:AddControl("Button", {Label="Remove all existing weapon/ammo", Command = "mtttweaponplacer_removeall", Text="Remove all existing items"})
 end
@@ -138,3 +138,83 @@ local function Export()
 end
 concommand.Add("mtttweaponplacer_export", Export)
 
+local function SpawnDummyItem(cls, pos, ang)
+  if SERVER then
+    if not cls or not pos or not ang then return false end
+
+    local mdl = mtttEntity[cls]["Model"]
+    if not mdl then return end
+
+    local ent = ents.Create(cls)
+    ent:SetModel(mdl)
+    ent:SetPos(pos)
+    ent:SetAngles(ang)
+    ent:SetCollisionGroup(COLLISION_GROUP_WEAPON)
+    ent:SetSolid(SOLID_VPHYSICS)
+    ent:SetMoveType(MOVETYPE_VPHYSICS)
+    ent:PhysicsInit(SOLID_VPHYSICS)
+
+    ent:Spawn()
+
+    local phys = ent:GetPhysicsObject()
+    if IsValid(phys) then
+      phys:SetAngles(ang)
+    end
+  end
+end
+
+local function Import()
+  if SERVER then
+    local map = string.lower(game.GetMap())
+    if not map then return end
+
+    local fname = "mttt/maps/" .. map .. "_ttt.txt"
+
+    if not file.Exists(fname, "DATA") then
+      PrintMessage(HUD_PRINTTALK,fname .. " not found!")
+      return
+    end
+
+    local buf = file.Read(fname, "DATA")
+    local lines = string.Explode("\n", buf)
+    local num = 0
+    for k, line in ipairs(lines) do
+      if not string.match(line, "^#") and line ~= "" then
+          local data = string.Explode("\t", line)
+
+          local fail = true -- pessimism
+
+          if #data > 0 then
+            if data[1] == "setting:" and tostring(data[2]) then
+                local raw = string.Explode(" ", data[2])
+                RunConsoleCommand("mtttweaponplacer_" .. raw[1], tonumber(raw[2]))
+
+                fail = false
+                num = num - 1
+            elseif #data == 3 then
+                local cls = data[1]
+                local ang = nil
+                local pos = nil
+
+                local posraw = string.Explode(" ", data[2])
+                pos = Vector(tonumber(posraw[1]), tonumber(posraw[2]), tonumber(posraw[3]))
+
+                local angraw = string.Explode(" ", data[3])
+                ang = Angle(tonumber(angraw[1]), tonumber(angraw[2]), tonumber(angraw[3]))
+
+                fail = SpawnDummyItem(cls, pos, ang)
+            end
+          end
+
+          if fail then
+            ErrorNoHalt("Invalid line " .. k .. " in " .. fname .. "\n")
+          else
+            num = num + 1
+          end
+      end
+    end
+
+    PrintMessage(HUD_PRINTTALK,"Spawned " .. tostring(num) .. " dummy ents")
+  end
+end
+concommand.Add("mtttweaponplacer_import", Import)
