@@ -295,7 +295,7 @@ local function Import()
 end
 concommand.Add("mtttweaponplacer_import", Import)
 
-local function RemoveAll()
+local function RemoveAll(ply)
   if SERVER then
     local num = 0
     local delete = function(ent)
@@ -310,6 +310,8 @@ local function RemoveAll()
       end
     end
     PrintMessage(HUD_PRINTTALK,"Removed " .. tostring(num) .. " weapon/ammo ents")
+  elseif CLIENT and game.SinglePlayer() ~= true then
+    ply:ChatPrint("You do not have permission to do this, have the server operator use mtttweaponplacer_removeall from server terminal or rcon")
   end
 end
 concommand.Add("mtttweaponplacer_removeall", RemoveAll)
